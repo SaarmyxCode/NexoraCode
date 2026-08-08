@@ -5,9 +5,10 @@ import 'package:nexora_ui/nexora_ui.dart';
 
 import 'package:ncode/src/features/editor/data/file_service.dart';
 import 'package:ncode/src/features/editor/domain/tab_item.dart';
-import 'package:ncode/src/features/editor/presentation/controllers/fast_code_controller.dart';
 import 'package:ncode/src/features/editor/presentation/providers/editor_providers.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/activity_bar.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/file_explorer.dart';
+// import 'package:ncode/src/features/editor/presentation/widgets/status_bar.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/tab_bar_header.dart';
 
 class NcodeEditorScreen extends ConsumerStatefulWidget {
@@ -18,30 +19,48 @@ class NcodeEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
-  FastCodeController? _codeController;
+  TextEditingController? _codeController;
+  int _selectedActivityIndex = 0;
+  int _currentLine = 1;
+  int _currentColumn = 1;
 
   void _updateController(String text, String filePath) {
     _codeController?.dispose();
+    _codeController = TextEditingController(text: text);
 
-    _codeController = FastCodeController(text: text);
-
-    _codeController!.addListener(() {
-      final tabs = ref.read(openTabsProvider);
-      final activeIndex = ref.read(activeTabIndexProvider);
-      if (activeIndex != null && activeIndex < tabs.length) {
-        final currentTab = tabs[activeIndex];
-        _codeController!.onTextChangedDebounced(() {
-          if (currentTab.content != _codeController!.text) {
-            currentTab.content = _codeController!.text;
-            if (!currentTab.isModified) {
-              currentTab.isModified = true;
-              ref.read(openTabsProvider.notifier).state = [...tabs];
-            }
-          }
-        });
-      }
-    });
+    _codeController!.addListener(_onTextCursorChanged);
     setState(() {});
+  }
+
+  void _onTextCursorChanged() {
+    if (_codeController == null) return;
+
+    final text = _codeController!.text;
+    final selection = _codeController!.selection;
+
+    if (selection.isValid && selection.isCollapsed) {
+      final cursorOffset = selection.baseOffset;
+      final textBeforeCursor = text.substring(0, cursorOffset);
+      final lines = textBeforeCursor.split('\n');
+
+      setState(() {
+        _currentLine = lines.length;
+        _currentColumn = lines.last.length + 1;
+      });
+    }
+
+    final tabs = ref.read(openTabsProvider);
+    final activeIndex = ref.read(activeTabIndexProvider);
+    if (activeIndex != null && activeIndex < tabs.length) {
+      final currentTab = tabs[activeIndex];
+      if (currentTab.content != text) {
+        currentTab.content = text;
+        if (!currentTab.isModified) {
+          currentTab.isModified = true;
+          ref.read(openTabsProvider.notifier).state = [...tabs];
+        }
+      }
+    }
   }
 
   void _openFile(String path, String name) async {
@@ -110,6 +129,12 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tabs = ref.watch(openTabsProvider);
+    final activeIndex = ref.watch(activeTabIndexProvider);
+    final activeTab = (activeIndex != null && activeIndex < tabs.length)
+        ? tabs[activeIndex]
+        : null;
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true):
@@ -118,67 +143,88 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          body: Row(
+          body: Column(
             children: [
-              FileExplorer(onFileSelected: _openFile),
               Expanded(
-                child: Column(
+                child: Row(
                   children: [
-                    TabBarHeader(
-                      onSave: _saveCurrentFile,
-                      onCloseTab: _closeTab,
-                      onTabSelected: (index) {
-                        ref.read(activeTabIndexProvider.notifier).state = index;
-                        final tabs = ref.read(openTabsProvider);
-                        _updateController(
-                          tabs[index].content,
-                          tabs[index].path,
-                        );
+                    ActivityBar(
+                      selectedIndex: _selectedActivityIndex,
+                      onSelect: (index) {
+                        setState(() {
+                          _selectedActivityIndex = index;
+                        });
                       },
                     ),
-                    const Divider(height: 1, color: NexoraColors.border),
+                    if (_selectedActivityIndex == 0)
+                      FileExplorer(onFileSelected: _openFile),
                     Expanded(
-                      child: Container(
-                        color: NexoraColors.background,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: _codeController == null
-                            ? const Center(
-                                child: Text(
-                                  'Ningún archivo abierto',
-                                  style: TextStyle(
-                                    color: NexoraColors.textMuted,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              )
-                            : TextField(
-                                controller: _codeController!,
-                                maxLines: null,
-                                expands: true,
-                                keyboardType: TextInputType.multiline,
-                                autofocus: true,
-                                autocorrect: false,
-                                enableSuggestions: false,
-                                style: const TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontSize: 13,
-                                  height: 1.4,
-                                  color: NexoraColors.textPrimary,
-                                ),
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
+                      child: Column(
+                        children: [
+                          TabBarHeader(
+                            onSave: _saveCurrentFile,
+                            onCloseTab: _closeTab,
+                            onTabSelected: (index) {
+                              ref.read(activeTabIndexProvider.notifier).state =
+                                  index;
+                              final currentTabs = ref.read(openTabsProvider);
+                              _updateController(
+                                currentTabs[index].content,
+                                currentTabs[index].path,
+                              );
+                            },
+                          ),
+                          const Divider(height: 1, color: NexoraColors.border),
+                          Expanded(
+                            child: Container(
+                              color: NexoraColors.background,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
+                              child: _codeController == null
+                                  ? const Center(
+                                      child: Text(
+                                        'Ningún archivo abierto',
+                                        style: TextStyle(
+                                          color: NexoraColors.textMuted,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    )
+                                  : TextField(
+                                      controller: _codeController!,
+                                      maxLines: null,
+                                      expands: true,
+                                      keyboardType: TextInputType.multiline,
+                                      autofocus: true,
+                                      autocorrect: false,
+                                      enableSuggestions: false,
+                                      style: const TextStyle(
+                                        fontFamily: 'monospace',
+                                        fontSize: 13,
+                                        height: 1.4,
+                                        color: NexoraColors.textPrimary,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
+              // StatusBar(
+              //   activeFilePath: activeTab?.path,
+              //   line: _currentLine,
+              //   column: _currentColumn,
+              // ),
             ],
           ),
         ),
