@@ -15,7 +15,7 @@ class ActivityBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 48,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: NexoraColors.surface,
         border: Border(right: BorderSide(color: NexoraColors.border, width: 1)),
       ),

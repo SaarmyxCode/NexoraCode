@@ -44,7 +44,7 @@ class _EmbeddedTerminalState extends State<EmbeddedTerminal> {
   Widget build(BuildContext context) {
     return Container(
       height: 200,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: NexoraColors.background,
         border: Border(top: BorderSide(color: NexoraColors.border, width: 1)),
       ),
@@ -56,13 +56,13 @@ class _EmbeddedTerminalState extends State<EmbeddedTerminal> {
             color: NexoraColors.surface,
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.terminal_rounded,
                   size: 14,
                   color: NexoraColors.accent,
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'TERMINAL',
                   style: TextStyle(
                     color: NexoraColors.textPrimary,
@@ -74,7 +74,7 @@ class _EmbeddedTerminalState extends State<EmbeddedTerminal> {
                 const Spacer(),
                 InkWell(
                   onTap: widget.onClose,
-                  child: const Icon(
+                  child: Icon(
                     Icons.close_rounded,
                     size: 14,
                     color: NexoraColors.textMuted,
@@ -91,9 +91,9 @@ class _EmbeddedTerminalState extends State<EmbeddedTerminal> {
               itemBuilder: (context, index) {
                 return Text(
                   _logs[index],
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: NexoraColors.textPrimary,
-                    fontFamily: 'monospace',
+                    fontFamily: 'Cascadia Code',
                     fontSize: 12,
                     height: 1.3,
                   ),
@@ -106,20 +106,20 @@ class _EmbeddedTerminalState extends State<EmbeddedTerminal> {
             color: NexoraColors.surface,
             child: Row(
               children: [
-                const Text(
+                Text(
                   '>\$ ',
                   style: TextStyle(
                     color: NexoraColors.accent,
-                    fontFamily: 'monospace',
+                    fontFamily: 'Cascadia Code',
                     fontSize: 12,
                   ),
                 ),
                 Expanded(
                   child: TextField(
                     controller: _cmdController,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: NexoraColors.textPrimary,
-                      fontFamily: 'monospace',
+                      fontFamily: 'Cascadia Code',
                       fontSize: 12,
                     ),
                     decoration: const InputDecoration(

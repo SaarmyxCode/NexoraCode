@@ -37,15 +37,15 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: NexoraColors.surface,
-        title: const Text(
+        title: Text(
           'Nuevo Archivo',
           style: TextStyle(color: NexoraColors.textPrimary, fontSize: 14),
         ),
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: const TextStyle(color: NexoraColors.textPrimary, fontSize: 13),
-          decoration: const InputDecoration(
+          style: TextStyle(color: NexoraColors.textPrimary, fontSize: 13),
+          decoration: InputDecoration(
             hintText: 'nombre_archivo.ext',
             hintStyle: TextStyle(color: NexoraColors.textMuted),
             enabledBorder: UnderlineInputBorder(
@@ -59,7 +59,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Cancelar',
               style: TextStyle(color: NexoraColors.textMuted),
             ),
@@ -69,14 +69,11 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
               if (controller.text.trim().isNotEmpty) {
                 final newFilePath = '$currentPath/${controller.text.trim()}';
                 final success = await FileService.createFile(newFilePath);
-                if (context.mounted) Navigator.pop(context);
+                if (mounted) Navigator.pop(context);
                 if (success) _refresh();
               }
             },
-            child: const Text(
-              'Crear',
-              style: TextStyle(color: NexoraColors.accent),
-            ),
+            child: Text('Crear', style: TextStyle(color: NexoraColors.accent)),
           ),
         ],
       ),
@@ -89,15 +86,15 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: NexoraColors.surface,
-        title: const Text(
+        title: Text(
           'Renombrar',
           style: TextStyle(color: NexoraColors.textPrimary, fontSize: 14),
         ),
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: const TextStyle(color: NexoraColors.textPrimary, fontSize: 13),
-          decoration: const InputDecoration(
+          style: TextStyle(color: NexoraColors.textPrimary, fontSize: 13),
+          decoration: InputDecoration(
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: NexoraColors.border),
             ),
@@ -109,7 +106,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Cancelar',
               style: TextStyle(color: NexoraColors.textMuted),
             ),
@@ -124,11 +121,11 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                   item.path,
                   newPath,
                 );
-                if (context.mounted) Navigator.pop(context);
+                if (mounted) Navigator.pop(context);
                 if (success) _refresh();
               }
             },
-            child: const Text(
+            child: Text(
               'Guardar',
               style: TextStyle(color: NexoraColors.accent),
             ),
@@ -143,21 +140,18 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: NexoraColors.surface,
-        title: const Text(
+        title: Text(
           'Confirmar Eliminación',
           style: TextStyle(color: NexoraColors.textPrimary, fontSize: 14),
         ),
         content: Text(
           '¿Deseas eliminar "${item.name}" definitivamente?',
-          style: const TextStyle(
-            color: NexoraColors.textSecondary,
-            fontSize: 13,
-          ),
+          style: TextStyle(color: NexoraColors.textSecondary, fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Cancelar',
               style: TextStyle(color: NexoraColors.textMuted),
             ),
@@ -165,13 +159,13 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
           TextButton(
             onPressed: () async {
               final success = await FileService.deleteItem(item.path);
-              if (context.mounted) Navigator.pop(context);
+              if (mounted) Navigator.pop(context);
               if (success) {
                 setState(() => _focusedItem = null);
                 _refresh();
               }
             },
-            child: const Text(
+            child: Text(
               'Eliminar',
               style: TextStyle(color: NexoraColors.error),
             ),
@@ -209,7 +203,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
       },
       child: Container(
         width: 240,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: NexoraColors.surface,
           border: Border(
             right: BorderSide(color: NexoraColors.border, width: 1),
@@ -218,24 +212,23 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header del Explorador
             Container(
               height: 40,
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(color: NexoraColors.border, width: 1),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.code_rounded,
                     size: 16,
                     color: NexoraColors.accent,
                   ),
                   const SizedBox(width: 6),
-                  const Text(
+                  Text(
                     'EXPLORADOR',
                     style: TextStyle(
                       color: NexoraColors.textPrimary,
@@ -245,9 +238,8 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                     ),
                   ),
                   const Spacer(),
-                  // Abrir Carpeta Nativa
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.folder_open_rounded,
                       size: 14,
                       color: NexoraColors.textSecondary,
@@ -258,9 +250,8 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                     onPressed: _pickNativeFolder,
                   ),
                   const SizedBox(width: 8),
-                  // Nuevo Archivo
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.note_add_outlined,
                       size: 14,
                       color: NexoraColors.textSecondary,
@@ -271,9 +262,8 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                     onPressed: () => _showCreateFileDialog(currentPath),
                   ),
                   const SizedBox(width: 8),
-                  // Refrescar
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.refresh_rounded,
                       size: 14,
                       color: NexoraColors.textSecondary,
@@ -286,12 +276,11 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                 ],
               ),
             ),
-            // Nombre de la Carpeta Raíz Fija
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.folder_special,
                     size: 13,
                     color: NexoraColors.accent,
@@ -300,7 +289,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                   Expanded(
                     child: Text(
                       rootFolderName.toUpperCase(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: NexoraColors.textPrimary,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -312,8 +301,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                 ],
               ),
             ),
-            const Divider(height: 8, color: NexoraColors.border),
-            // Árbol de archivos
+            Divider(height: 8, color: NexoraColors.border),
             Expanded(
               child: dirAsync.when(
                 loading: () => const Center(
@@ -322,10 +310,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                 error: (err, stack) => Center(
                   child: Text(
                     'Error: $err',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: NexoraColors.error,
-                    ),
+                    style: TextStyle(fontSize: 11, color: NexoraColors.error),
                   ),
                 ),
                 data: (items) {

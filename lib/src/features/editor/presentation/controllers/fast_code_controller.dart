@@ -9,7 +9,6 @@ class FastCodeController extends TextEditingController {
   static final _keywordRegex = RegExp(
     r'\b(class|enum|struct|void|import|export|final|const|var|let|async|await|return|if|else|for|while|fn|pub|use|mut|self)\b',
   );
-  // Usar strings adyacentes sin '+'
   static final _stringRegex = RegExp(
     r'(".*?"|'
     "'"
@@ -19,11 +18,55 @@ class FastCodeController extends TextEditingController {
   static final _commentRegex = RegExp(r'(//.*|/\*[\s\S]*?\*/)');
   static final _numberRegex = RegExp(r'\b\d+\b');
 
-  // Usar super.text
   FastCodeController({
     super.text,
     this.debounceDuration = const Duration(milliseconds: 80),
   });
+
+  static const Map<String, String> _pairMap = {
+    '{': '}',
+    '[': ']',
+    '(': ')',
+    '"': '"',
+    "'": "'",
+    '<': '>',
+  };
+
+  void handleAutoClosePairs(String typedChar) {
+    if (!_pairMap.containsKey(typedChar)) return;
+
+    final closePair = _pairMap[typedChar]!;
+    final currentSelection = selection;
+
+    if (!currentSelection.isValid) return;
+
+    final start = currentSelection.start;
+    final end = currentSelection.end;
+    final currentText = text;
+
+    if (start != end) {
+      final selectedText = currentText.substring(start, end);
+      final newText = currentText.replaceRange(
+        start,
+        end,
+        '$typedChar$selectedText$closePair',
+      );
+      value = TextEditingValue(
+        text: newText,
+        selection: TextSelection(baseOffset: start + 1, extentOffset: end + 1),
+      );
+    } else {
+      final newText = currentText.replaceRange(
+        start,
+        end,
+        '$typedChar$closePair',
+      );
+      value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: start + 1),
+      );
+    }
+  }
 
   @override
   TextSpan buildTextSpan({
@@ -46,10 +89,10 @@ class FastCodeController extends TextEditingController {
       ),
       onMatch: (Match match) {
         final matchedText = match[0]!;
-        TextStyle matchStyle = const TextStyle(color: NexoraColors.textPrimary);
+        TextStyle matchStyle = TextStyle(color: NexoraColors.textPrimary);
 
         if (_commentRegex.hasMatch(matchedText)) {
-          matchStyle = const TextStyle(
+          matchStyle = TextStyle(
             color: NexoraColors.textMuted,
             fontStyle: FontStyle.italic,
           );

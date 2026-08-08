@@ -26,19 +26,15 @@ class StatusBar extends StatelessWidget {
     return Container(
       height: 24,
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: NexoraColors.surface,
         border: Border(top: BorderSide(color: NexoraColors.border, width: 1)),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.alt_route_rounded,
-            size: 12,
-            color: NexoraColors.accent,
-          ),
+          Icon(Icons.alt_route_rounded, size: 12, color: NexoraColors.accent),
           const SizedBox(width: 6),
-          const Text(
+          Text(
             'main',
             style: TextStyle(color: NexoraColors.textSecondary, fontSize: 11),
           ),
@@ -75,15 +71,12 @@ class StatusBar extends StatelessWidget {
           const Spacer(),
           Text(
             'Ln $line, Col $column',
-            style: const TextStyle(
-              color: NexoraColors.textSecondary,
-              fontSize: 11,
-            ),
+            style: TextStyle(color: NexoraColors.textSecondary, fontSize: 11),
           ),
           const SizedBox(width: 14),
           Text(
             language,
-            style: const TextStyle(
+            style: TextStyle(
               color: NexoraColors.accent,
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -92,14 +85,14 @@ class StatusBar extends StatelessWidget {
           const SizedBox(width: 14),
           InkWell(
             onTap: onToggleTerminal,
-            child: const Row(
+            child: Row(
               children: [
                 Icon(
                   Icons.terminal_rounded,
                   size: 12,
                   color: NexoraColors.textSecondary,
                 ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Text(
                   'Terminal',
                   style: TextStyle(

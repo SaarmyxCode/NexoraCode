@@ -82,10 +82,9 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
     });
   }
 
-  void _formatCode() {
+  String _formatCurrentCode() {
     final activeIndex = ref.read(activeTabIndexProvider);
     final tabs = ref.read(openTabsProvider);
-
     if (activeIndex != null &&
         activeIndex < tabs.length &&
         _codeController != null) {
@@ -96,26 +95,45 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
         language,
       );
 
-      setState(() {
-        _codeController!.value = TextEditingValue(
-          text: formatted,
-          selection: TextSelection.collapsed(offset: formatted.length),
-        );
-        tab.content = formatted;
-        tab.isModified = true;
-      });
+      _codeController!.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+      tab.content = formatted;
+      return formatted;
+    }
+    return _codeController?.text ?? '';
+  }
 
-      ref.read(openTabsProvider.notifier).state = [...tabs];
-      _runAnalysis(formatted, tab.path);
+  void _saveCurrentFile() async {
+    final activeIndex = ref.read(activeTabIndexProvider);
+    final tabs = ref.read(openTabsProvider);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Código formateado'),
-            duration: Duration(milliseconds: 600),
-            backgroundColor: NexoraColors.surfaceElevated,
-          ),
-        );
+    if (activeIndex != null &&
+        activeIndex < tabs.length &&
+        _codeController != null) {
+      final contentToSave = _formatCurrentCode();
+      final tab = tabs[activeIndex];
+
+      final success = await FileService.saveFileContent(
+        tab.path,
+        contentToSave,
+      );
+
+      if (success) {
+        tab.isModified = false;
+        ref.read(openTabsProvider.notifier).state = [...tabs];
+        _runAnalysis(contentToSave, tab.path);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Guardado'),
+              duration: const Duration(milliseconds: 600),
+              backgroundColor: NexoraColors.surfaceElevated,
+            ),
+          );
+        }
       }
     }
   }
@@ -156,35 +174,6 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
     }
   }
 
-  void _saveCurrentFile() async {
-    final activeIndex = ref.read(activeTabIndexProvider);
-    final tabs = ref.read(openTabsProvider);
-
-    if (activeIndex != null &&
-        activeIndex < tabs.length &&
-        _codeController != null) {
-      final tab = tabs[activeIndex];
-      final success = await FileService.saveFileContent(
-        tab.path,
-        _codeController!.text,
-      );
-
-      if (success) {
-        tab.isModified = false;
-        ref.read(openTabsProvider.notifier).state = [...tabs];
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Archivo guardado'),
-              duration: Duration(milliseconds: 600),
-              backgroundColor: NexoraColors.surfaceElevated,
-            ),
-          );
-        }
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final tabs = ref.watch(openTabsProvider);
@@ -207,12 +196,27 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true):
             _saveCurrentFile,
-        const SingleActivator(LogicalKeyboardKey.keyF, shift: true, alt: true):
-            _formatCode,
+        const SingleActivator(
+          LogicalKeyboardKey.keyF,
+          shift: true,
+          alt: true,
+        ): () {
+          _formatCurrentCode();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Código formateado'),
+                duration: const Duration(milliseconds: 600),
+                backgroundColor: NexoraColors.surfaceElevated,
+              ),
+            );
+          }
+        },
       },
       child: Focus(
         autofocus: true,
         child: Scaffold(
+          backgroundColor: NexoraColors.background,
           body: Column(
             children: [
               Expanded(
@@ -248,7 +252,7 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
                               );
                             },
                           ),
-                          const Divider(height: 1, color: NexoraColors.border),
+                          Divider(height: 1, color: NexoraColors.border),
                           Expanded(
                             child: Container(
                               color: NexoraColors.background,
@@ -257,33 +261,46 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
                                 vertical: 8,
                               ),
                               child: _codeController == null
-                                  ? const Center(
+                                  ? Center(
                                       child: Text(
-                                        'Ningún archivo abierto',
+                                        'NCODE',
                                         style: TextStyle(
+                                          fontFamily: 'Gliker',
                                           color: NexoraColors.textMuted,
-                                          fontSize: 13,
+                                          fontSize: 28,
+                                          letterSpacing: 2.0,
                                         ),
                                       ),
                                     )
-                                  : TextField(
-                                      controller: _codeController!,
-                                      maxLines: null,
-                                      expands: true,
-                                      keyboardType: TextInputType.multiline,
-                                      autofocus: true,
-                                      autocorrect: false,
-                                      enableSuggestions: false,
-                                      style: const TextStyle(
-                                        fontFamily: 'monospace',
-                                        fontSize: 13,
-                                        height: 1.4,
-                                        color: NexoraColors.textPrimary,
-                                      ),
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                        focusedBorder: InputBorder.none,
-                                        contentPadding: EdgeInsets.zero,
+                                  : KeyboardListener(
+                                      focusNode: FocusNode(),
+                                      onKeyEvent: (KeyEvent event) {
+                                        if (event is KeyDownEvent &&
+                                            event.character != null) {
+                                          _codeController!.handleAutoClosePairs(
+                                            event.character!,
+                                          );
+                                        }
+                                      },
+                                      child: TextField(
+                                        controller: _codeController!,
+                                        maxLines: null,
+                                        expands: true,
+                                        keyboardType: TextInputType.multiline,
+                                        autofocus: true,
+                                        autocorrect: false,
+                                        enableSuggestions: false,
+                                        style: TextStyle(
+                                          fontFamily: 'Cascadia Code',
+                                          fontSize: 13,
+                                          height: 1.4,
+                                          color: NexoraColors.textPrimary,
+                                        ),
+                                        decoration: const InputDecoration(
+                                          border: InputBorder.none,
+                                          focusedBorder: InputBorder.none,
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
                                       ),
                                     ),
                             ),

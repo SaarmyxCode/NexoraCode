@@ -20,9 +20,12 @@ class NcodeApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: NexoraColors.background,
-        colorScheme: const ColorScheme.dark(
+        colorScheme: ColorScheme.dark(
           surface: NexoraColors.surface,
           primary: NexoraColors.accent,
+        ),
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(fontFamily: 'Inter', color: Colors.white),
         ),
       ),
       home: const NcodeEditorScreen(),

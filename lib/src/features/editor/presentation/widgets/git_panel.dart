@@ -8,7 +8,7 @@ class GitPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 240,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: NexoraColors.surface,
         border: Border(right: BorderSide(color: NexoraColors.border, width: 1)),
       ),
@@ -18,19 +18,19 @@ class GitPanel extends StatelessWidget {
           Container(
             height: 40,
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: NexoraColors.border, width: 1),
               ),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(
                   Icons.alt_route_rounded,
                   size: 16,
                   color: NexoraColors.accent,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
                   'CONTROL DE VERSIONES',
                   style: TextStyle(
@@ -43,7 +43,7 @@ class GitPanel extends StatelessWidget {
               ],
             ),
           ),
-          const Expanded(
+          Expanded(
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -53,7 +53,7 @@ class GitPanel extends StatelessWidget {
                     size: 32,
                     color: NexoraColors.textMuted,
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'Repositorio Limpio',
                     style: TextStyle(
@@ -62,7 +62,7 @@ class GitPanel extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Sin cambios pendientes',
                     style: TextStyle(

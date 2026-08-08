@@ -8,7 +8,7 @@ class SearchPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 240,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: NexoraColors.surface,
         border: Border(right: BorderSide(color: NexoraColors.border, width: 1)),
       ),
@@ -18,19 +18,19 @@ class SearchPanel extends StatelessWidget {
           Container(
             height: 40,
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: NexoraColors.border, width: 1),
               ),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(
                   Icons.search_rounded,
                   size: 16,
                   color: NexoraColors.accent,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
                   'BUSCAR',
                   style: TextStyle(
@@ -46,13 +46,10 @@ class SearchPanel extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
-              style: const TextStyle(
-                color: NexoraColors.textPrimary,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: NexoraColors.textPrimary, fontSize: 12),
               decoration: InputDecoration(
                 hintText: 'Buscar en el proyecto...',
-                hintStyle: const TextStyle(
+                hintStyle: TextStyle(
                   color: NexoraColors.textMuted,
                   fontSize: 12,
                 ),
@@ -64,20 +61,20 @@ class SearchPanel extends StatelessWidget {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: NexoraColors.border),
+                  borderSide: BorderSide(color: NexoraColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: NexoraColors.border),
+                  borderSide: BorderSide(color: NexoraColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: NexoraColors.accent),
+                  borderSide: BorderSide(color: NexoraColors.accent),
                 ),
               ),
             ),
           ),
-          const Expanded(
+          Expanded(
             child: Center(
               child: Text(
                 'Sin resultados',
