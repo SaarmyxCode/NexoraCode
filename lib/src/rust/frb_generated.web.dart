@@ -7,6 +7,7 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/file_system.dart';
+import 'api/git.dart';
 import 'api/terminal.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -31,7 +32,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FileEntry dco_decode_file_entry(dynamic raw);
 
   @protected
+  GitFileChange dco_decode_git_file_change(dynamic raw);
+
+  @protected
   List<FileEntry> dco_decode_list_file_entry(dynamic raw);
+
+  @protected
+  List<GitFileChange> dco_decode_list_git_file_change(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -52,7 +59,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FileEntry sse_decode_file_entry(SseDeserializer deserializer);
 
   @protected
+  GitFileChange sse_decode_git_file_change(SseDeserializer deserializer);
+
+  @protected
   List<FileEntry> sse_decode_list_file_entry(SseDeserializer deserializer);
+
+  @protected
+  List<GitFileChange> sse_decode_list_git_file_change(
+    SseDeserializer deserializer,
+  );
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -76,8 +91,17 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_file_entry(FileEntry self, SseSerializer serializer);
 
   @protected
+  void sse_encode_git_file_change(GitFileChange self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_file_entry(
     List<FileEntry> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_git_file_change(
+    List<GitFileChange> self,
     SseSerializer serializer,
   );
 

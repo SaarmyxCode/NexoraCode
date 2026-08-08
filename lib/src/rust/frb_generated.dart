@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api/file_system.dart';
+import 'api/git.dart';
 import 'api/terminal.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -65,7 +66,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 1407115791;
+  int get rustContentHash => -1927700644;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -80,6 +81,17 @@ abstract class RustLibApi extends BaseApi {
   Future<bool> crateApiFileSystemCreateNewFile({required String filePath});
 
   Future<String> crateApiTerminalExecuteCommand({required String cmd});
+
+  Future<String> crateApiGitGetGitBranch({required String repoPath});
+
+  Future<List<GitFileChange>> crateApiGitGetGitStatus({
+    required String repoPath,
+  });
+
+  Future<bool> crateApiGitGitCommit({
+    required String repoPath,
+    required String message,
+  });
 
   Future<List<FileEntry>> crateApiFileSystemReadDirectory({
     required String dirPath,
@@ -165,6 +177,98 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "execute_command", argNames: ["cmd"]);
 
   @override
+  Future<String> crateApiGitGetGitBranch({required String repoPath}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(repoPath, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiGitGetGitBranchConstMeta,
+        argValues: [repoPath],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiGitGetGitBranchConstMeta =>
+      const TaskConstMeta(debugName: "get_git_branch", argNames: ["repoPath"]);
+
+  @override
+  Future<List<GitFileChange>> crateApiGitGetGitStatus({
+    required String repoPath,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(repoPath, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_git_file_change,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiGitGetGitStatusConstMeta,
+        argValues: [repoPath],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiGitGetGitStatusConstMeta =>
+      const TaskConstMeta(debugName: "get_git_status", argNames: ["repoPath"]);
+
+  @override
+  Future<bool> crateApiGitGitCommit({
+    required String repoPath,
+    required String message,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(repoPath, serializer);
+          sse_encode_String(message, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 5,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiGitGitCommitConstMeta,
+        argValues: [repoPath, message],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiGitGitCommitConstMeta => const TaskConstMeta(
+    debugName: "git_commit",
+    argNames: ["repoPath", "message"],
+  );
+
+  @override
   Future<List<FileEntry>> crateApiFileSystemReadDirectory({
     required String dirPath,
   }) {
@@ -176,7 +280,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 6,
             port: port_,
           );
         },
@@ -204,7 +308,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 7,
             port: port_,
           );
         },
@@ -235,7 +339,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 8,
             port: port_,
           );
         },
@@ -267,7 +371,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 9,
             port: port_,
           );
         },
@@ -302,7 +406,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 10,
             port: port_,
           );
         },
@@ -349,9 +453,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  GitFileChange dco_decode_git_file_change(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return GitFileChange(
+      path: dco_decode_String(arr[0]),
+      status: dco_decode_String(arr[1]),
+    );
+  }
+
+  @protected
   List<FileEntry> dco_decode_list_file_entry(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_file_entry).toList();
+  }
+
+  @protected
+  List<GitFileChange> dco_decode_list_git_file_change(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_git_file_change).toList();
   }
 
   @protected
@@ -395,6 +517,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  GitFileChange sse_decode_git_file_change(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_path = sse_decode_String(deserializer);
+    var var_status = sse_decode_String(deserializer);
+    return GitFileChange(path: var_path, status: var_status);
+  }
+
+  @protected
   List<FileEntry> sse_decode_list_file_entry(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -402,6 +532,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var ans_ = <FileEntry>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_file_entry(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<GitFileChange> sse_decode_list_git_file_change(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <GitFileChange>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_git_file_change(deserializer));
     }
     return ans_;
   }
@@ -451,6 +595,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_git_file_change(
+    GitFileChange self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.path, serializer);
+    sse_encode_String(self.status, serializer);
+  }
+
+  @protected
   void sse_encode_list_file_entry(
     List<FileEntry> self,
     SseSerializer serializer,
@@ -459,6 +613,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_file_entry(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_git_file_change(
+    List<GitFileChange> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_git_file_change(item, serializer);
     }
   }
 

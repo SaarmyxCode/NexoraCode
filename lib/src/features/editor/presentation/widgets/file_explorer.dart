@@ -6,6 +6,7 @@ import 'package:nexora_ui/nexora_ui.dart';
 import 'package:ncode/src/core/utils/system_path.dart';
 import 'package:ncode/src/features/editor/data/file_service.dart';
 import 'package:ncode/src/features/editor/presentation/providers/editor_providers.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/file_tree_item.dart';
 import 'package:ncode/src/rust/api/file_system.dart';
 
 class FileExplorer extends ConsumerStatefulWidget {
@@ -67,7 +68,10 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
           TextButton(
             onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
-                final newFilePath = '$currentPath/${controller.text.trim()}';
+                final targetPath = _focusedItem != null && _focusedItem!.isDir
+                    ? _focusedItem!.path
+                    : currentPath;
+                final newFilePath = '$targetPath/${controller.text.trim()}';
                 final success = await FileService.createFile(newFilePath);
                 if (mounted) Navigator.pop(context);
                 if (success) _refresh();
@@ -180,6 +184,9 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
     final currentPath = ref.watch(currentPathProvider);
     final tabs = ref.watch(openTabsProvider);
     final activeIndex = ref.watch(activeTabIndexProvider);
+    final activeTab = (activeIndex != null && activeIndex < tabs.length)
+        ? tabs[activeIndex]
+        : null;
     final dirAsync = ref.watch(directoryContentsProvider(currentPath));
 
     final rootFolderName = currentPath
@@ -244,7 +251,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                       size: 14,
                       color: NexoraColors.textSecondary,
                     ),
-                    tooltip: 'Abrir Carpeta (Nativo)',
+                    tooltip: 'Abrir Carpeta Raíz',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: _pickNativeFolder,
@@ -319,61 +326,20 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                     itemCount: items.length,
                     itemBuilder: (context, index) {
                       final item = items[index];
-                      final isSelected =
-                          activeIndex != null &&
-                          activeIndex < tabs.length &&
-                          tabs[activeIndex].path == item.path;
-                      final isFocused = _focusedItem?.path == item.path;
-
-                      return InkWell(
-                        onTap: () {
-                          setState(() => _focusedItem = item);
-                          if (item.isDir) {
-                            ref
-                                .read(currentPathProvider.notifier)
-                                .setPath(item.path);
-                          } else {
-                            widget.onFileSelected(item.path, item.name);
+                      return FileTreeItem(
+                        item: item,
+                        level: 0,
+                        focusedItem: _focusedItem,
+                        activeFilePath: activeTab?.path,
+                        onItemTap: (clickedItem) {
+                          setState(() => _focusedItem = clickedItem);
+                          if (!clickedItem.isDir) {
+                            widget.onFileSelected(
+                              clickedItem.path,
+                              clickedItem.name,
+                            );
                           }
                         },
-                        child: Container(
-                          height: 28,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          color: isFocused
-                              ? NexoraColors.selection
-                              : isSelected
-                              ? NexoraColors.surfaceElevated
-                              : Colors.transparent,
-                          child: Row(
-                            children: [
-                              Icon(
-                                item.isDir
-                                    ? Icons.folder_outlined
-                                    : Icons.description_outlined,
-                                size: 14,
-                                color: item.isDir
-                                    ? NexoraColors.accent
-                                    : NexoraColors.textMuted,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  item.name,
-                                  style: TextStyle(
-                                    color: isSelected || isFocused
-                                        ? NexoraColors.textPrimary
-                                        : NexoraColors.textSecondary,
-                                    fontSize: 12,
-                                    fontWeight: isSelected || isFocused
-                                        ? FontWeight.w500
-                                        : FontWeight.w400,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       );
                     },
                   );
