@@ -51,3 +51,23 @@ pub async fn read_file_content(file_path: String) -> String {
 pub async fn write_file_content(file_path: String, content: String) -> bool {
     tokio::fs::write(file_path, content).await.is_ok()
 }
+
+// Crear un archivo nuevo
+pub async fn create_new_file(file_path: String) -> bool {
+    tokio::fs::File::create(file_path).await.is_ok()
+}
+
+// Renombrar archivo o carpeta
+pub async fn rename_entry(old_path: String, new_path: String) -> bool {
+    tokio::fs::rename(old_path, new_path).await.is_ok()
+}
+
+// Eliminar archivo o directorio recursivamente
+pub async fn remove_entry(path: String) -> bool {
+    let p = std::path::Path::new(&path);
+    if p.is_dir() {
+        tokio::fs::remove_dir_all(path).await.is_ok()
+    } else {
+        tokio::fs::remove_file(path).await.is_ok()
+    }
+}
