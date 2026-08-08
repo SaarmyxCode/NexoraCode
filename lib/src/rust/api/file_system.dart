@@ -22,6 +22,18 @@ Future<bool> writeFileContent({
   content: content,
 );
 
+Future<bool> createNewFile({required String filePath}) =>
+    RustLib.instance.api.crateApiFileSystemCreateNewFile(filePath: filePath);
+
+Future<bool> renameEntry({required String oldPath, required String newPath}) =>
+    RustLib.instance.api.crateApiFileSystemRenameEntry(
+      oldPath: oldPath,
+      newPath: newPath,
+    );
+
+Future<bool> removeEntry({required String path}) =>
+    RustLib.instance.api.crateApiFileSystemRemoveEntry(path: path);
+
 class FileEntry {
   final String name;
   final String path;

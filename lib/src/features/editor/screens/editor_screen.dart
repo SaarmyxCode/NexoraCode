@@ -4,11 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexora_ui/nexora_ui.dart';
 
 import 'package:ncode/src/features/editor/data/file_service.dart';
+import 'package:ncode/src/features/editor/data/code_analysis_service.dart';
 import 'package:ncode/src/features/editor/domain/tab_item.dart';
+import 'package:ncode/src/features/editor/presentation/controllers/fast_code_controller.dart';
 import 'package:ncode/src/features/editor/presentation/providers/editor_providers.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/activity_bar.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/file_explorer.dart';
-// import 'package:ncode/src/features/editor/presentation/widgets/status_bar.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/search_panel.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/git_panel.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/embedded_terminal.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/status_bar.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/tab_bar_header.dart';
 
 class NcodeEditorScreen extends ConsumerStatefulWidget {
@@ -19,20 +24,27 @@ class NcodeEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
-  TextEditingController? _codeController;
+  FastCodeController? _codeController;
   int _selectedActivityIndex = 0;
   int _currentLine = 1;
   int _currentColumn = 1;
+  bool _isTerminalOpen = false;
+  List<CodeDiagnostic> _diagnostics = [];
 
   void _updateController(String text, String filePath) {
     _codeController?.dispose();
-    _codeController = TextEditingController(text: text);
-
-    _codeController!.addListener(_onTextCursorChanged);
+    _codeController = FastCodeController(text: text);
+    _codeController!.addListener(() => _onCodeChanged(filePath));
+    _runAnalysis(text, filePath);
     setState(() {});
   }
 
-  void _onTextCursorChanged() {
+  void _runAnalysis(String text, String filePath) {
+    final language = CodeAnalysisService.detectLanguage(filePath);
+    _diagnostics = CodeAnalysisService.analyzeCode(text, language);
+  }
+
+  void _onCodeChanged(String filePath) {
     if (_codeController == null) return;
 
     final text = _codeController!.text;
@@ -49,17 +61,49 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
       });
     }
 
-    final tabs = ref.read(openTabsProvider);
-    final activeIndex = ref.read(activeTabIndexProvider);
-    if (activeIndex != null && activeIndex < tabs.length) {
-      final currentTab = tabs[activeIndex];
-      if (currentTab.content != text) {
-        currentTab.content = text;
-        if (!currentTab.isModified) {
-          currentTab.isModified = true;
-          ref.read(openTabsProvider.notifier).state = [...tabs];
+    _codeController!.onTextChangedDebounced(() {
+      _runAnalysis(text, filePath);
+      final tabs = ref.read(openTabsProvider);
+      final activeIndex = ref.read(activeTabIndexProvider);
+      if (activeIndex != null && activeIndex < tabs.length) {
+        final currentTab = tabs[activeIndex];
+        if (currentTab.content != text) {
+          currentTab.content = text;
+          if (!currentTab.isModified) {
+            currentTab.isModified = true;
+            ref.read(openTabsProvider.notifier).state = [...tabs];
+          }
         }
       }
+    });
+  }
+
+  void _formatCode() {
+    final activeIndex = ref.read(activeTabIndexProvider);
+    final tabs = ref.read(openTabsProvider);
+    if (activeIndex != null &&
+        activeIndex < tabs.length &&
+        _codeController != null) {
+      final tab = tabs[activeIndex];
+      final language = CodeAnalysisService.detectLanguage(tab.path);
+      final formatted = CodeAnalysisService.formatCode(
+        _codeController!.text,
+        language,
+      );
+
+      _codeController!.text = formatted;
+      tab.content = formatted;
+      tab.isModified = true;
+      ref.read(openTabsProvider.notifier).state = [...tabs];
+      _runAnalysis(formatted, tab.path);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Código formateado correctamente'),
+          duration: Duration(milliseconds: 600),
+          backgroundColor: NexoraColors.surfaceElevated,
+        ),
+      );
     }
   }
 
@@ -90,6 +134,7 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
       ref.read(activeTabIndexProvider.notifier).state = null;
       _codeController?.dispose();
       _codeController = null;
+      _diagnostics = [];
       setState(() {});
     } else if (activeIndex != null) {
       final newIndex = index >= tabs.length ? tabs.length - 1 : index;
@@ -135,10 +180,22 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
         ? tabs[activeIndex]
         : null;
 
+    final errors = _diagnostics
+        .where((d) => d.type == DiagnosticType.error)
+        .length;
+    final warnings = _diagnostics
+        .where(
+          (d) =>
+              d.type == DiagnosticType.warning || d.type == DiagnosticType.info,
+        )
+        .length;
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true):
             _saveCurrentFile,
+        const SingleActivator(LogicalKeyboardKey.keyF, shift: true, alt: true):
+            _formatCode,
       },
       child: Focus(
         autofocus: true,
@@ -157,7 +214,11 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
                       },
                     ),
                     if (_selectedActivityIndex == 0)
-                      FileExplorer(onFileSelected: _openFile),
+                      FileExplorer(onFileSelected: _openFile)
+                    else if (_selectedActivityIndex == 1)
+                      const SearchPanel()
+                    else if (_selectedActivityIndex == 2)
+                      const GitPanel(),
                     Expanded(
                       child: Column(
                         children: [
@@ -214,17 +275,26 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
                                     ),
                             ),
                           ),
+                          if (_isTerminalOpen)
+                            EmbeddedTerminal(
+                              onClose: () =>
+                                  setState(() => _isTerminalOpen = false),
+                            ),
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
-              // StatusBar(
-              //   activeFilePath: activeTab?.path,
-              //   line: _currentLine,
-              //   column: _currentColumn,
-              // ),
+              StatusBar(
+                activeFilePath: activeTab?.path,
+                line: _currentLine,
+                column: _currentColumn,
+                errorCount: errors,
+                warningCount: warnings,
+                onToggleTerminal: () =>
+                    setState(() => _isTerminalOpen = !_isTerminalOpen),
+              ),
             ],
           ),
         ),
