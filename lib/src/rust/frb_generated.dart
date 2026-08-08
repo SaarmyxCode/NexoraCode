@@ -67,7 +67,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 288673688;
+  int get rustContentHash => 1274560861;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -88,6 +88,11 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<String> crateApiFileSystemReadFileContent({required String filePath});
+
+  Future<bool> crateApiFileSystemWriteFileContent({
+    required String filePath,
+    required String content,
+  });
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -207,6 +212,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "read_file_content",
         argNames: ["filePath"],
+      );
+
+  @override
+  Future<bool> crateApiFileSystemWriteFileContent({
+    required String filePath,
+    required String content,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(filePath, serializer);
+          sse_encode_String(content, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 5,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiFileSystemWriteFileContentConstMeta,
+        argValues: [filePath, content],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiFileSystemWriteFileContentConstMeta =>
+      const TaskConstMeta(
+        debugName: "write_file_content",
+        argNames: ["filePath", "content"],
       );
 
   @protected

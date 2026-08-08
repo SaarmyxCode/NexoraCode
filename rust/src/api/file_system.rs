@@ -41,3 +41,6 @@ pub fn read_file_content(file_path: String) -> String {
     std::fs::read_to_string(file_path).unwrap_or_else(|_| "Error al leer el archivo".to_string())
 }
 
+pub fn write_file_content(file_path: String, content: String) -> bool {
+    std::fs::write(file_path, content).is_ok()
+}

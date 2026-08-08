@@ -14,6 +14,14 @@ Future<List<FileEntry>> readDirectory({required String dirPath}) =>
 Future<String> readFileContent({required String filePath}) =>
     RustLib.instance.api.crateApiFileSystemReadFileContent(filePath: filePath);
 
+Future<bool> writeFileContent({
+  required String filePath,
+  required String content,
+}) => RustLib.instance.api.crateApiFileSystemWriteFileContent(
+  filePath: filePath,
+  content: content,
+);
+
 class FileEntry {
   final String name;
   final String path;
