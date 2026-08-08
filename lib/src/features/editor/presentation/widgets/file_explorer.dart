@@ -69,7 +69,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
               if (controller.text.trim().isNotEmpty) {
                 final newFilePath = '$currentPath/${controller.text.trim()}';
                 final success = await FileService.createFile(newFilePath);
-                if (mounted) Navigator.pop(context);
+                if (context.mounted) Navigator.pop(context);
                 if (success) _refresh();
               }
             },
@@ -124,7 +124,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                   item.path,
                   newPath,
                 );
-                if (mounted) Navigator.pop(context);
+                if (context.mounted) Navigator.pop(context);
                 if (success) _refresh();
               }
             },
@@ -165,7 +165,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
           TextButton(
             onPressed: () async {
               final success = await FileService.deleteItem(item.path);
-              if (mounted) Navigator.pop(context);
+              if (context.mounted) Navigator.pop(context);
               if (success) {
                 setState(() => _focusedItem = null);
                 _refresh();

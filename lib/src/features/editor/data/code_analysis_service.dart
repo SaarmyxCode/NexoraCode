@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'package:ncode/src/features/editor/data/file_service.dart';
-
 class CodeDiagnostic {
   final int line;
   final String message;
@@ -16,35 +13,25 @@ class CodeDiagnostic {
 enum DiagnosticType { error, warning, info }
 
 class CodeAnalysisService {
-  // Detector automático de lenguaje según la extensión
   static String detectLanguage(String? filePath) {
-    if (filePath == null) return 'Plain Text';
-    final ext = filePath.split('.').last.toLowerCase();
-    switch (ext) {
-      case 'dart':
-        return 'Dart';
-      case 'rs':
-        return 'Rust';
-      case 'js':
-      case 'jsx':
-        return 'JavaScript';
-      case 'ts':
-      case 'tsx':
-        return 'TypeScript';
-      case 'py':
-        return 'Python';
-      case 'json':
-        return 'JSON';
-      case 'html':
-        return 'HTML';
-      case 'css':
-        return 'CSS';
-      default:
-        return 'Plain Text';
-    }
+    if (filePath == null || filePath.isEmpty) return 'Plain Text';
+
+    final pathLower = filePath.toLowerCase();
+    if (pathLower.endsWith('.dart')) return 'Dart';
+    if (pathLower.endsWith('.rs')) return 'Rust';
+    if (pathLower.endsWith('.js') || pathLower.endsWith('.jsx'))
+      return 'JavaScript';
+    if (pathLower.endsWith('.ts') || pathLower.endsWith('.tsx'))
+      return 'TypeScript';
+    if (pathLower.endsWith('.py')) return 'Python';
+    if (pathLower.endsWith('.json')) return 'JSON';
+    if (pathLower.endsWith('.html') || pathLower.endsWith('.htm'))
+      return 'HTML';
+    if (pathLower.endsWith('.css')) return 'CSS';
+
+    return 'Plain Text';
   }
 
-  // Analizador ligero de sintaxis y recomendaciones
   static List<CodeDiagnostic> analyzeCode(String content, String language) {
     final List<CodeDiagnostic> diagnostics = [];
     final lines = content.split('\n');
@@ -52,27 +39,16 @@ class CodeAnalysisService {
     for (int i = 0; i < lines.length; i++) {
       final lineText = lines[i];
 
-      // Verificaciones sintácticas básicas rápidas
       if (language == 'Dart' ||
           language == 'JavaScript' ||
-          language == 'Rust') {
+          language == 'Rust' ||
+          language == 'TypeScript') {
         if (lineText.contains('var ') && language == 'Dart') {
           diagnostics.add(
             CodeDiagnostic(
               line: i + 1,
-              message:
-                  'Recomendación: Usa "final" o "const" en lugar de "var" para tipos inmutables.',
+              message: 'Sugerencia: Se recomienda usar "final" o "const".',
               type: DiagnosticType.info,
-            ),
-          );
-        }
-        if ((lineText.contains('{') && !lineText.contains('}')) &&
-            i == lines.length - 1) {
-          diagnostics.add(
-            CodeDiagnostic(
-              line: i + 1,
-              message: 'Error de sintaxis: Llave "{" no cerrada.',
-              type: DiagnosticType.error,
             ),
           );
         }
@@ -81,7 +57,7 @@ class CodeAnalysisService {
           diagnostics.add(
             CodeDiagnostic(
               line: i + 1,
-              message: 'Error JSON: Coma sobrante al final del objeto.',
+              message: 'Error JSON: Coma al final del objeto.',
               type: DiagnosticType.error,
             ),
           );
@@ -92,31 +68,39 @@ class CodeAnalysisService {
     return diagnostics;
   }
 
-  // Formateador de código
   static String formatCode(String content, String language) {
     final lines = content.split('\n');
     final StringBuffer formatted = StringBuffer();
     int indentLevel = 0;
 
-    for (var line in lines) {
-      var trimmed = line.trim();
+    for (int i = 0; i < lines.length; i++) {
+      String trimmed = lines[i].trim();
+
       if (trimmed.isEmpty) {
-        formatted.writeln();
+        if (i < lines.length - 1) formatted.writeln();
         continue;
       }
 
-      if (trimmed.startsWith('}') || trimmed.startsWith(']')) {
+      // Reducir sangría si la línea cierra un bloque
+      if (trimmed.startsWith('}') ||
+          trimmed.startsWith(']') ||
+          trimmed.startsWith(')')) {
         indentLevel = (indentLevel - 1).clamp(0, 50);
       }
 
-      final indent = '  ' * indentLevel;
-      formatted.writeln('$indent$trimmed');
+      final String indent = '  ' * indentLevel;
+      formatted.write(indent + trimmed);
+      if (i < lines.length - 1) formatted.writeln();
 
-      if (trimmed.endsWith('{') || trimmed.endsWith('[')) {
+      // Aumentar sangría si la línea abre un bloque
+      if (trimmed.endsWith('{') ||
+          trimmed.endsWith('[') ||
+          trimmed.endsWith('(') ||
+          trimmed.endsWith(':')) {
         indentLevel++;
       }
     }
 
-    return formatted.toString().trimRight();
+    return formatted.toString();
   }
 }

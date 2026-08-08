@@ -6,18 +6,24 @@ class FastCodeController extends TextEditingController {
   Timer? _debounceTimer;
   final Duration debounceDuration;
 
-  // Cache de sintaxis rápida mediante Regex livianas
   static final _keywordRegex = RegExp(
     r'\b(class|enum|struct|void|import|export|final|const|var|let|async|await|return|if|else|for|while|fn|pub|use|mut|self)\b',
   );
-  static final _stringRegex = RegExp(r'(".*?"|' + "'" + r".*?'" + r')');
+  // Usar strings adyacentes sin '+'
+  static final _stringRegex = RegExp(
+    r'(".*?"|'
+    "'"
+    r".*?'"
+    ')',
+  );
   static final _commentRegex = RegExp(r'(//.*|/\*[\s\S]*?\*/)');
   static final _numberRegex = RegExp(r'\b\d+\b');
 
+  // Usar super.text
   FastCodeController({
-    String? text,
+    super.text,
     this.debounceDuration = const Duration(milliseconds: 80),
-  }) : super(text: text);
+  });
 
   @override
   TextSpan buildTextSpan({
@@ -28,14 +34,12 @@ class FastCodeController extends TextEditingController {
     final textContent = text;
     if (textContent.isEmpty) return TextSpan(style: style);
 
-    // Para archivos muy grandes (>15,000 caracteres), renderizado directo instantáneo
     if (textContent.length > 15000) {
       return TextSpan(text: textContent, style: style);
     }
 
     final List<TextSpan> children = [];
 
-    // Parser Regex ligero de una sola pasada
     textContent.splitMapJoin(
       RegExp(
         '${_commentRegex.pattern}|${_stringRegex.pattern}|${_keywordRegex.pattern}|${_numberRegex.pattern}',

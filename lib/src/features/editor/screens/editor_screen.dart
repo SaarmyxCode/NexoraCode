@@ -41,7 +41,9 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
 
   void _runAnalysis(String text, String filePath) {
     final language = CodeAnalysisService.detectLanguage(filePath);
-    _diagnostics = CodeAnalysisService.analyzeCode(text, language);
+    setState(() {
+      _diagnostics = CodeAnalysisService.analyzeCode(text, language);
+    });
   }
 
   void _onCodeChanged(String filePath) {
@@ -52,13 +54,15 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
 
     if (selection.isValid && selection.isCollapsed) {
       final cursorOffset = selection.baseOffset;
-      final textBeforeCursor = text.substring(0, cursorOffset);
-      final lines = textBeforeCursor.split('\n');
+      if (cursorOffset <= text.length) {
+        final textBeforeCursor = text.substring(0, cursorOffset);
+        final lines = textBeforeCursor.split('\n');
 
-      setState(() {
-        _currentLine = lines.length;
-        _currentColumn = lines.last.length + 1;
-      });
+        setState(() {
+          _currentLine = lines.length;
+          _currentColumn = lines.last.length + 1;
+        });
+      }
     }
 
     _codeController!.onTextChangedDebounced(() {
@@ -81,6 +85,7 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
   void _formatCode() {
     final activeIndex = ref.read(activeTabIndexProvider);
     final tabs = ref.read(openTabsProvider);
+
     if (activeIndex != null &&
         activeIndex < tabs.length &&
         _codeController != null) {
@@ -91,19 +96,27 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
         language,
       );
 
-      _codeController!.text = formatted;
-      tab.content = formatted;
-      tab.isModified = true;
+      setState(() {
+        _codeController!.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+        tab.content = formatted;
+        tab.isModified = true;
+      });
+
       ref.read(openTabsProvider.notifier).state = [...tabs];
       _runAnalysis(formatted, tab.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Código formateado correctamente'),
-          duration: Duration(milliseconds: 600),
-          backgroundColor: NexoraColors.surfaceElevated,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Código formateado'),
+            duration: Duration(milliseconds: 600),
+            backgroundColor: NexoraColors.surfaceElevated,
+          ),
+        );
+      }
     }
   }
 

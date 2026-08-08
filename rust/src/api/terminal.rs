@@ -1,20 +1,25 @@
-import_std!();
-use std::io::{Read, Write};
-use std::process::{Command, Stdio};
-use std::sync::{Arc, Mutex};
+use std::process::Command;
 
-pub struct TerminalSession {
-    child: Arc<Mutex<std::process::Child>>,
-}
+pub async fn execute_command(cmd: String) -> String {
+    tokio::task::spawn_blocking(move || {
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(cmd)
+            .output();
 
-pub fn execute_command(cmd: String) -> String {
-    let output = Command::new("sh")
-        .arg("-c")
-        .arg(cmd)
-        .output();
-
-    match output {
-        Ok(out) => String::from_utf8_lossy(&out.stdout).to_string(),
-        Err(e) => format!("Error al ejecutar comando: {}", e),
-    }
+        match output {
+            Ok(out) => {
+                let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+                let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+                if !stdout.is_empty() {
+                    stdout
+                } else if !stderr.is_empty() {
+                    stderr
+                } else {
+                    "Comando ejecutado sin salida.".to_string()
+                }
+            }
+            Err(e) => format!("Error al ejecutar comando: {}", e),
+        }
+    }).await.unwrap_or_else(|_| "Error de ejecución en hilo".to_string())
 }

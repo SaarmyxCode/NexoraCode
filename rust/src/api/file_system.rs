@@ -1,4 +1,3 @@
-use walkdir::WalkDir;
 use std::path::Path;
 
 #[derive(Debug, Clone)]
@@ -8,7 +7,6 @@ pub struct FileEntry {
     pub is_dir: bool,
 }
 
-// Lectura de directorio asíncrona (no congela la interfaz)
 pub async fn read_directory(dir_path: String) -> Vec<FileEntry> {
     tokio::task::spawn_blocking(move || {
         let mut entries = Vec::new();
@@ -27,7 +25,6 @@ pub async fn read_directory(dir_path: String) -> Vec<FileEntry> {
             }
         }
 
-        // Ordenar: Directorios primero, luego archivos
         entries.sort_by(|a, b| {
             if a.is_dir == b.is_dir {
                 a.name.to_lowercase().cmp(&b.name.to_lowercase())
@@ -40,29 +37,24 @@ pub async fn read_directory(dir_path: String) -> Vec<FileEntry> {
     }).await.unwrap_or_default()
 }
 
-// Lectura de archivo asíncrona
 pub async fn read_file_content(file_path: String) -> String {
     tokio::fs::read_to_string(file_path)
         .await
         .unwrap_or_else(|_| "Error al leer el archivo".to_string())
 }
 
-// Escritura de archivo asíncrona
 pub async fn write_file_content(file_path: String, content: String) -> bool {
     tokio::fs::write(file_path, content).await.is_ok()
 }
 
-// Crear un archivo nuevo
 pub async fn create_new_file(file_path: String) -> bool {
     tokio::fs::File::create(file_path).await.is_ok()
 }
 
-// Renombrar archivo o carpeta
 pub async fn rename_entry(old_path: String, new_path: String) -> bool {
     tokio::fs::rename(old_path, new_path).await.is_ok()
 }
 
-// Eliminar archivo o directorio recursivamente
 pub async fn remove_entry(path: String) -> bool {
     let p = std::path::Path::new(&path);
     if p.is_dir() {

@@ -31,11 +31,13 @@ class _EmbeddedTerminalState extends State<EmbeddedTerminal> {
       _logs.add(output);
     });
 
-    _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent,
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-    );
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -48,7 +50,6 @@ class _EmbeddedTerminalState extends State<EmbeddedTerminal> {
       ),
       child: Column(
         children: [
-          // Header de la Terminal
           Container(
             height: 32,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -82,7 +83,6 @@ class _EmbeddedTerminalState extends State<EmbeddedTerminal> {
               ],
             ),
           ),
-          // Salida de la Terminal
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -101,7 +101,6 @@ class _EmbeddedTerminalState extends State<EmbeddedTerminal> {
               },
             ),
           ),
-          // Entrada de comandos
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             color: NexoraColors.surface,
