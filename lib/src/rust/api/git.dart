@@ -11,14 +11,47 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 Future<String> getGitBranch({required String repoPath}) =>
     RustLib.instance.api.crateApiGitGetGitBranch(repoPath: repoPath);
 
+Future<List<String>> getGitBranches({required String repoPath}) =>
+    RustLib.instance.api.crateApiGitGetGitBranches(repoPath: repoPath);
+
+Future<bool> checkoutGitBranch({
+  required String repoPath,
+  required String branchName,
+}) => RustLib.instance.api.crateApiGitCheckoutGitBranch(
+  repoPath: repoPath,
+  branchName: branchName,
+);
+
+Future<bool> createGitBranch({
+  required String repoPath,
+  required String newBranchName,
+}) => RustLib.instance.api.crateApiGitCreateGitBranch(
+  repoPath: repoPath,
+  newBranchName: newBranchName,
+);
+
 Future<List<GitFileChange>> getGitStatus({required String repoPath}) =>
     RustLib.instance.api.crateApiGitGetGitStatus(repoPath: repoPath);
+
+Future<bool> gitStageFile({
+  required String repoPath,
+  required String filePath,
+}) => RustLib.instance.api.crateApiGitGitStageFile(
+  repoPath: repoPath,
+  filePath: filePath,
+);
 
 Future<bool> gitCommit({required String repoPath, required String message}) =>
     RustLib.instance.api.crateApiGitGitCommit(
       repoPath: repoPath,
       message: message,
     );
+
+Future<String> gitPush({required String repoPath}) =>
+    RustLib.instance.api.crateApiGitGitPush(repoPath: repoPath);
+
+Future<String> gitPull({required String repoPath}) =>
+    RustLib.instance.api.crateApiGitGitPull(repoPath: repoPath);
 
 class GitFileChange {
   final String path;

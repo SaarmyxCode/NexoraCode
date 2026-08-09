@@ -12,6 +12,10 @@ import 'package:ncode/src/features/editor/presentation/widgets/activity_bar.dart
 import 'package:ncode/src/features/editor/presentation/widgets/file_explorer.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/search_panel.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/git_panel.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/debug_panel.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/extensions_panel.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/account_panel.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/settings_panel.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/embedded_terminal.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/status_bar.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/tab_bar_header.dart';
@@ -233,9 +237,17 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
                     if (_selectedActivityIndex == 0)
                       FileExplorer(onFileSelected: _openFile)
                     else if (_selectedActivityIndex == 1)
-                      const SearchPanel()
+                      SearchPanel(onFileSelected: _openFile)
                     else if (_selectedActivityIndex == 2)
-                      const GitPanel(),
+                      const GitPanel()
+                    else if (_selectedActivityIndex == 3)
+                      const DebugPanel()
+                    else if (_selectedActivityIndex == 4)
+                      const ExtensionsPanel()
+                    else if (_selectedActivityIndex == 5)
+                      const AccountPanel()
+                    else if (_selectedActivityIndex == 6)
+                      const SettingsPanel(),
                     Expanded(
                       child: Column(
                         children: [

@@ -19,14 +19,17 @@ class CodeAnalysisService {
     final pathLower = filePath.toLowerCase();
     if (pathLower.endsWith('.dart')) return 'Dart';
     if (pathLower.endsWith('.rs')) return 'Rust';
-    if (pathLower.endsWith('.js') || pathLower.endsWith('.jsx'))
+    if (pathLower.endsWith('.js') || pathLower.endsWith('.jsx')) {
       return 'JavaScript';
-    if (pathLower.endsWith('.ts') || pathLower.endsWith('.tsx'))
+    }
+    if (pathLower.endsWith('.ts') || pathLower.endsWith('.tsx')) {
       return 'TypeScript';
+    }
     if (pathLower.endsWith('.py')) return 'Python';
     if (pathLower.endsWith('.json')) return 'JSON';
-    if (pathLower.endsWith('.html') || pathLower.endsWith('.htm'))
+    if (pathLower.endsWith('.html') || pathLower.endsWith('.htm')) {
       return 'HTML';
+    }
     if (pathLower.endsWith('.css')) return 'CSS';
 
     return 'Plain Text';
