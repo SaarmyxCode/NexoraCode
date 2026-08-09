@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nexora_ui/nexora_ui.dart';
 
+import 'package:ncode/src/core/theme/theme_provider.dart';
 import 'package:ncode/src/features/editor/data/file_service.dart';
 import 'package:ncode/src/features/editor/data/code_analysis_service.dart';
 import 'package:ncode/src/features/editor/domain/tab_item.dart';
@@ -19,6 +19,7 @@ import 'package:ncode/src/features/editor/presentation/widgets/settings_panel.da
 import 'package:ncode/src/features/editor/presentation/widgets/embedded_terminal.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/status_bar.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/tab_bar_header.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/nexora_floating_card.dart';
 
 class NcodeEditorScreen extends ConsumerStatefulWidget {
   const NcodeEditorScreen({super.key});
@@ -130,11 +131,12 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
         _runAnalysis(contentToSave, tab.path);
 
         if (mounted) {
+          final palette = ref.read(activePaletteProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Guardado'),
               duration: const Duration(milliseconds: 600),
-              backgroundColor: NexoraColors.surfaceElevated,
+              backgroundColor: palette.surfaceElevated,
             ),
           );
         }
@@ -180,6 +182,7 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = ref.watch(activePaletteProvider);
     final tabs = ref.watch(openTabsProvider);
     final activeIndex = ref.watch(activeTabIndexProvider);
     final activeTab = (activeIndex != null && activeIndex < tabs.length)
@@ -211,7 +214,7 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
               SnackBar(
                 content: const Text('Código formateado'),
                 duration: const Duration(milliseconds: 600),
-                backgroundColor: NexoraColors.surfaceElevated,
+                backgroundColor: palette.surfaceElevated,
               ),
             );
           }
@@ -220,12 +223,13 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          backgroundColor: NexoraColors.background,
+          backgroundColor: palette.background,
           body: Column(
             children: [
               Expanded(
                 child: Row(
                   children: [
+                    // 1. Barra de Actividades Flotante
                     ActivityBar(
                       selectedIndex: _selectedActivityIndex,
                       onSelect: (index) {
@@ -234,108 +238,148 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
                         });
                       },
                     ),
+
+                    // 2. Panel Lateral Flotante Activo
                     if (_selectedActivityIndex == 0)
-                      FileExplorer(onFileSelected: _openFile)
+                      NexoraFloatingCard(
+                        width: 240,
+                        margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+                        child: FileExplorer(onFileSelected: _openFile),
+                      )
                     else if (_selectedActivityIndex == 1)
-                      SearchPanel(onFileSelected: _openFile)
+                      NexoraFloatingCard(
+                        width: 240,
+                        margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+                        child: SearchPanel(onFileSelected: _openFile),
+                      )
                     else if (_selectedActivityIndex == 2)
-                      const GitPanel()
+                      NexoraFloatingCard(
+                        width: 240,
+                        margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+                        child: const GitPanel(),
+                      )
                     else if (_selectedActivityIndex == 3)
-                      const DebugPanel()
+                      NexoraFloatingCard(
+                        width: 240,
+                        margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+                        child: const DebugPanel(),
+                      )
                     else if (_selectedActivityIndex == 4)
-                      const ExtensionsPanel()
+                      NexoraFloatingCard(
+                        width: 240,
+                        margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+                        child: const ExtensionsPanel(),
+                      )
                     else if (_selectedActivityIndex == 5)
-                      const AccountPanel()
+                      NexoraFloatingCard(
+                        width: 240,
+                        margin: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+                        child: const AccountPanel(),
+                      )
                     else if (_selectedActivityIndex == 6)
                       const SettingsPanel(),
+
+                    // 3. Editor Central Flotante
                     Expanded(
-                      child: Column(
-                        children: [
-                          TabBarHeader(
-                            onSave: _saveCurrentFile,
-                            onCloseTab: _closeTab,
-                            onTabSelected: (index) {
-                              ref.read(activeTabIndexProvider.notifier).state =
-                                  index;
-                              final currentTabs = ref.read(openTabsProvider);
-                              _updateController(
-                                currentTabs[index].content,
-                                currentTabs[index].path,
-                              );
-                            },
-                          ),
-                          Divider(height: 1, color: NexoraColors.border),
-                          Expanded(
-                            child: Container(
-                              color: NexoraColors.background,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
+                      child: NexoraFloatingCard(
+                        margin: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                        child: Column(
+                          children: [
+                            TabBarHeader(
+                              onSave: _saveCurrentFile,
+                              onCloseTab: _closeTab,
+                              onTabSelected: (index) {
+                                ref
+                                        .read(activeTabIndexProvider.notifier)
+                                        .state =
+                                    index;
+                                final currentTabs = ref.read(openTabsProvider);
+                                _updateController(
+                                  currentTabs[index].content,
+                                  currentTabs[index].path,
+                                );
+                              },
+                            ),
+                            Divider(height: 1, color: palette.border),
+                            Expanded(
+                              child: Container(
+                                color: palette.background,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                child: _codeController == null
+                                    ? Center(
+                                        child: Text(
+                                          'NCODE',
+                                          style: TextStyle(
+                                            fontFamily: 'Gliker',
+                                            color: palette.textMuted,
+                                            fontSize: 28,
+                                            letterSpacing: 2.0,
+                                          ),
+                                        ),
+                                      )
+                                    : KeyboardListener(
+                                        focusNode: FocusNode(),
+                                        onKeyEvent: (KeyEvent event) {
+                                          if (event is KeyDownEvent &&
+                                              event.character != null) {
+                                            _codeController!
+                                                .handleAutoClosePairs(
+                                                  event.character!,
+                                                );
+                                          }
+                                        },
+                                        child: TextField(
+                                          controller: _codeController!,
+                                          maxLines: null,
+                                          expands: true,
+                                          keyboardType: TextInputType.multiline,
+                                          autofocus: true,
+                                          autocorrect: false,
+                                          enableSuggestions: false,
+                                          style: TextStyle(
+                                            fontFamily: 'Cascadia Code',
+                                            fontSize: 13,
+                                            height: 1.4,
+                                            color: palette.textPrimary,
+                                          ),
+                                          decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                            focusedBorder: InputBorder.none,
+                                            contentPadding: EdgeInsets.zero,
+                                          ),
+                                        ),
+                                      ),
                               ),
-                              child: _codeController == null
-                                  ? Center(
-                                      child: Text(
-                                        'NCODE',
-                                        style: TextStyle(
-                                          fontFamily: 'Gliker',
-                                          color: NexoraColors.textMuted,
-                                          fontSize: 28,
-                                          letterSpacing: 2.0,
-                                        ),
-                                      ),
-                                    )
-                                  : KeyboardListener(
-                                      focusNode: FocusNode(),
-                                      onKeyEvent: (KeyEvent event) {
-                                        if (event is KeyDownEvent &&
-                                            event.character != null) {
-                                          _codeController!.handleAutoClosePairs(
-                                            event.character!,
-                                          );
-                                        }
-                                      },
-                                      child: TextField(
-                                        controller: _codeController!,
-                                        maxLines: null,
-                                        expands: true,
-                                        keyboardType: TextInputType.multiline,
-                                        autofocus: true,
-                                        autocorrect: false,
-                                        enableSuggestions: false,
-                                        style: TextStyle(
-                                          fontFamily: 'Cascadia Code',
-                                          fontSize: 13,
-                                          height: 1.4,
-                                          color: NexoraColors.textPrimary,
-                                        ),
-                                        decoration: const InputDecoration(
-                                          border: InputBorder.none,
-                                          focusedBorder: InputBorder.none,
-                                          contentPadding: EdgeInsets.zero,
-                                        ),
-                                      ),
-                                    ),
                             ),
-                          ),
-                          if (_isTerminalOpen)
-                            EmbeddedTerminal(
-                              onClose: () =>
-                                  setState(() => _isTerminalOpen = false),
-                            ),
-                        ],
+                            if (_isTerminalOpen)
+                              EmbeddedTerminal(
+                                onClose: () =>
+                                    setState(() => _isTerminalOpen = false),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              StatusBar(
-                activeFilePath: activeTab?.path,
-                line: _currentLine,
-                column: _currentColumn,
-                errorCount: errors,
-                warningCount: warnings,
-                onToggleTerminal: () =>
-                    setState(() => _isTerminalOpen = !_isTerminalOpen),
+
+              // 4. Status Bar Flotante Inferior
+              NexoraFloatingCard(
+                height: 28,
+                margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                child: StatusBar(
+                  activeFilePath: activeTab?.path,
+                  line: _currentLine,
+                  column: _currentColumn,
+                  errorCount: errors,
+                  warningCount: warnings,
+                  onToggleTerminal: () =>
+                      setState(() => _isTerminalOpen = !_isTerminalOpen),
+                ),
               ),
             ],
           ),
