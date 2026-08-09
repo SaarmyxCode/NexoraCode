@@ -28,7 +28,67 @@ pub async fn get_git_branch(repo_path: String) -> String {
     .unwrap_or_else(|_| "sin repo".to_string())
 }
 
-// Obtener la lista de archivos modificados
+// Obtener todas las ramas locales
+pub async fn get_git_branches(repo_path: String) -> Vec<String> {
+    tokio::task::spawn_blocking(move || {
+        let mut branches = Vec::new();
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(&repo_path)
+            .arg("branch")
+            .arg("--format=%(refname:short)")
+            .output();
+
+        if let Ok(out) = output {
+            if out.status.success() {
+                let stdout = String::from_utf8_lossy(&out.stdout);
+                for line in stdout.lines() {
+                    if !line.trim().is_empty() {
+                        branches.push(line.trim().to_string());
+                    }
+                }
+            }
+        }
+        branches
+    })
+    .await
+    .unwrap_or_default()
+}
+
+// Cambiar de rama (Checkout)
+pub async fn checkout_git_branch(repo_path: String, branch_name: String) -> bool {
+    tokio::task::spawn_blocking(move || {
+        let status = Command::new("git")
+            .arg("-C")
+            .arg(&repo_path)
+            .arg("checkout")
+            .arg(&branch_name)
+            .status();
+
+        status.map(|s| s.success()).unwrap_or(false)
+    })
+    .await
+    .unwrap_or(false)
+}
+
+// Crear y cambiar a una nueva rama
+pub async fn create_git_branch(repo_path: String, new_branch_name: String) -> bool {
+    tokio::task::spawn_blocking(move || {
+        let status = Command::new("git")
+            .arg("-C")
+            .arg(&repo_path)
+            .arg("checkout")
+            .arg("-b")
+            .arg(&new_branch_name)
+            .status();
+
+        status.map(|s| s.success()).unwrap_or(false)
+    })
+    .await
+    .unwrap_or(false)
+}
+
+// Obtener lista de archivos modificados/sin rastrear
 pub async fn get_git_status(repo_path: String) -> Vec<GitFileChange> {
     tokio::task::spawn_blocking(move || {
         let mut changes = Vec::new();
@@ -57,10 +117,25 @@ pub async fn get_git_status(repo_path: String) -> Vec<GitFileChange> {
     .unwrap_or_default()
 }
 
-// Ejecutar Git Commit
+// Stage de un archivo individual
+pub async fn git_stage_file(repo_path: String, file_path: String) -> bool {
+    tokio::task::spawn_blocking(move || {
+        let status = Command::new("git")
+            .arg("-C")
+            .arg(&repo_path)
+            .arg("add")
+            .arg(&file_path)
+            .status();
+
+        status.map(|s| s.success()).unwrap_or(false)
+    })
+    .await
+    .unwrap_or(false)
+}
+
+// Ejecutar Commit
 pub async fn git_commit(repo_path: String, message: String) -> bool {
     tokio::task::spawn_blocking(move || {
-        // 1. Git Add .
         let add_status = Command::new("git")
             .arg("-C")
             .arg(&repo_path)
@@ -69,7 +144,6 @@ pub async fn git_commit(repo_path: String, message: String) -> bool {
             .status();
 
         if add_status.map(|s| s.success()).unwrap_or(false) {
-            // 2. Git Commit
             let commit_status = Command::new("git")
                 .arg("-C")
                 .arg(&repo_path)
@@ -84,4 +158,57 @@ pub async fn git_commit(repo_path: String, message: String) -> bool {
     })
     .await
     .unwrap_or(false)
+}
+
+// Sincronizar / Push a GitHub
+pub async fn git_push(repo_path: String) -> String {
+    tokio::task::spawn_blocking(move || {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(&repo_path)
+            .arg("push")
+            .output();
+
+        match output {
+            Ok(out) => {
+                let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+                let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+                if out.status.success() {
+                    "OK".to_string()
+                } else if !stderr.is_empty() {
+                    stderr
+                } else {
+                    stdout
+                }
+            }
+            Err(e) => format!("Error de ejecución: {}", e),
+        }
+    })
+    .await
+    .unwrap_or_else(|_| "Error de hilo".to_string())
+}
+
+// Pull desde GitHub
+pub async fn git_pull(repo_path: String) -> String {
+    tokio::task::spawn_blocking(move || {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(&repo_path)
+            .arg("pull")
+            .output();
+
+        match output {
+            Ok(out) => {
+                let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+                if out.status.success() {
+                    "OK".to_string()
+                } else {
+                    String::from_utf8_lossy(&out.stderr).to_string()
+                }
+            }
+            Err(e) => format!("Error: {}", e),
+        }
+    })
+    .await
+    .unwrap_or_else(|_| "Error de hilo".to_string())
 }
