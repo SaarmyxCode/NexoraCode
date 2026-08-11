@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Ncode
+Comment=Ultra-minimalist Code Editor by Nexora Labs
+Exec=/usr/bin/ncode
+Terminal=false
+Type=Application
+Categories=Development;IDE;TextEditor;
+StartupWMClass=ncode
+Keywords=Code;Editor;Nexora;Ncode;

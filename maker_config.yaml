@@ -1,0 +1,12 @@
+name: ncode
+version: 1.0.0
+description: 'Ultra-minimalist Code Editor by Nexora Labs'
+homepage: 'https://github.com/saarmyx/ncode'
+
+makers:
+  - name: deb
+    config:
+      icon: assets/icon/app_icon.png
+      categories:
+        - Development
+        - IDE

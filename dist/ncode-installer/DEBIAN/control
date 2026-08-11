@@ -1,0 +1,8 @@
+Package: ncode
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Santiago Sarmiento <saarmyx@nexoralabs.com>
+Description: Ultra-minimalist Code Editor by Nexora Labs
+ Built with Flutter, Rust, and Nexora UI Design System.

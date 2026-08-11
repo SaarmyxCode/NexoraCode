@@ -1,0 +1,43 @@
+name: Build Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install Codegen & Generate Bindings
+        run: |
+          cargo install flutter_rust_bridge_codegen
+          flutter pub get
+          flutter_rust_bridge_codegen generate
+
+      - name: Build Windows Release
+        run: flutter build windows --release
+
+      - name: Package with Inno Setup
+        shell: cmd
+        run: |
+          choco install innosetup
+          iscc windows/installer.iss
+
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ncode-Windows-Setup
+          path: dist/Ncode-1.0.0-Windows-Setup.exe

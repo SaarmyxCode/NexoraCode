@@ -1,0 +1,20 @@
+display_name: Ncode
+package_name: ncode
+version: 1.0.0
+build_number: 1
+priority: optional
+section: utils
+maintainer:
+  name: Santiago Sarmiento
+  email: saarmyx@nexoralabs.com
+desktop_file:
+  name: Ncode
+  generic_name: Code Editor
+  comment: Ultra-minimalist Code Editor by Nexora Labs
+  categories:
+    - Development
+    - IDE
+  keywords:
+    - Code
+    - Editor
+    - Nexora
