@@ -67,7 +67,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -56362741;
+  int get rustContentHash => 444874977;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -128,15 +128,8 @@ abstract class RustLibApi extends BaseApi {
     required String newPath,
   });
 
-  Future<BigInt> crateApiSearchReplaceInWorkspace({
-    required String rootPath,
-    required String query,
-    required String replacement,
-  });
-
-  Future<List<SearchResult>> crateApiSearchSearchInWorkspace({
-    required String rootPath,
-    required String query,
+  Future<List<SearchResultMatch>> crateApiSearchSearchInWorkspace({
+    required SearchOptions options,
   });
 
   Future<bool> crateApiFileSystemWriteFileContent({
@@ -615,18 +608,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<BigInt> crateApiSearchReplaceInWorkspace({
-    required String rootPath,
-    required String query,
-    required String replacement,
+  Future<List<SearchResultMatch>> crateApiSearchSearchInWorkspace({
+    required SearchOptions options,
   }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(rootPath, serializer);
-          sse_encode_String(query, serializer);
-          sse_encode_String(replacement, serializer);
+          sse_encode_box_autoadd_search_options(options, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -635,46 +624,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_usize,
-          decodeErrorData: null,
-        ),
-        constMeta: kCrateApiSearchReplaceInWorkspaceConstMeta,
-        argValues: [rootPath, query, replacement],
-        apiImpl: this,
-      ),
-    );
-  }
-
-  TaskConstMeta get kCrateApiSearchReplaceInWorkspaceConstMeta =>
-      const TaskConstMeta(
-        debugName: "replace_in_workspace",
-        argNames: ["rootPath", "query", "replacement"],
-      );
-
-  @override
-  Future<List<SearchResult>> crateApiSearchSearchInWorkspace({
-    required String rootPath,
-    required String query,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(rootPath, serializer);
-          sse_encode_String(query, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 17,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_list_search_result,
-          decodeErrorData: null,
+          decodeSuccessData: sse_decode_list_search_result_match,
+          decodeErrorData: sse_decode_String,
         ),
         constMeta: kCrateApiSearchSearchInWorkspaceConstMeta,
-        argValues: [rootPath, query],
+        argValues: [options],
         apiImpl: this,
       ),
     );
@@ -683,7 +637,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiSearchSearchInWorkspaceConstMeta =>
       const TaskConstMeta(
         debugName: "search_in_workspace",
-        argNames: ["rootPath", "query"],
+        argNames: ["options"],
       );
 
   @override
@@ -700,7 +654,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 17,
             port: port_,
           );
         },
@@ -731,6 +685,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   bool dco_decode_bool(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as bool;
+  }
+
+  @protected
+  SearchOptions dco_decode_box_autoadd_search_options(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_search_options(raw);
   }
 
   @protected
@@ -783,21 +743,47 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<SearchResult> dco_decode_list_search_result(dynamic raw) {
+  List<SearchResultMatch> dco_decode_list_search_result_match(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>).map(dco_decode_search_result).toList();
+    return (raw as List<dynamic>).map(dco_decode_search_result_match).toList();
   }
 
   @protected
-  SearchResult dco_decode_search_result(dynamic raw) {
+  String? dco_decode_opt_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_String(raw);
+  }
+
+  @protected
+  SearchOptions dco_decode_search_options(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
-    return SearchResult(
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return SearchOptions(
+      query: dco_decode_String(arr[0]),
+      rootDir: dco_decode_String(arr[1]),
+      isRegex: dco_decode_bool(arr[2]),
+      matchCase: dco_decode_bool(arr[3]),
+      matchWholeWord: dco_decode_bool(arr[4]),
+      fileIncludeFilter: dco_decode_opt_String(arr[5]),
+      fileExcludeFilter: dco_decode_opt_String(arr[6]),
+    );
+  }
+
+  @protected
+  SearchResultMatch dco_decode_search_result_match(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return SearchResultMatch(
       filePath: dco_decode_String(arr[0]),
-      lineNumber: dco_decode_usize(arr[1]),
-      lineText: dco_decode_String(arr[2]),
+      fileName: dco_decode_String(arr[1]),
+      lineNumber: dco_decode_usize(arr[2]),
+      lineContent: dco_decode_String(arr[3]),
+      startCol: dco_decode_usize(arr[4]),
+      endCol: dco_decode_usize(arr[5]),
     );
   }
 
@@ -830,6 +816,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   bool sse_decode_bool(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint8() != 0;
+  }
+
+  @protected
+  SearchOptions sse_decode_box_autoadd_search_options(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_search_options(deserializer));
   }
 
   @protected
@@ -895,29 +889,69 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<SearchResult> sse_decode_list_search_result(
+  List<SearchResultMatch> sse_decode_list_search_result_match(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <SearchResult>[];
+    var ans_ = <SearchResultMatch>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_search_result(deserializer));
+      ans_.add(sse_decode_search_result_match(deserializer));
     }
     return ans_;
   }
 
   @protected
-  SearchResult sse_decode_search_result(SseDeserializer deserializer) {
+  String? sse_decode_opt_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_String(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  SearchOptions sse_decode_search_options(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_query = sse_decode_String(deserializer);
+    var var_rootDir = sse_decode_String(deserializer);
+    var var_isRegex = sse_decode_bool(deserializer);
+    var var_matchCase = sse_decode_bool(deserializer);
+    var var_matchWholeWord = sse_decode_bool(deserializer);
+    var var_fileIncludeFilter = sse_decode_opt_String(deserializer);
+    var var_fileExcludeFilter = sse_decode_opt_String(deserializer);
+    return SearchOptions(
+      query: var_query,
+      rootDir: var_rootDir,
+      isRegex: var_isRegex,
+      matchCase: var_matchCase,
+      matchWholeWord: var_matchWholeWord,
+      fileIncludeFilter: var_fileIncludeFilter,
+      fileExcludeFilter: var_fileExcludeFilter,
+    );
+  }
+
+  @protected
+  SearchResultMatch sse_decode_search_result_match(
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_filePath = sse_decode_String(deserializer);
+    var var_fileName = sse_decode_String(deserializer);
     var var_lineNumber = sse_decode_usize(deserializer);
-    var var_lineText = sse_decode_String(deserializer);
-    return SearchResult(
+    var var_lineContent = sse_decode_String(deserializer);
+    var var_startCol = sse_decode_usize(deserializer);
+    var var_endCol = sse_decode_usize(deserializer);
+    return SearchResultMatch(
       filePath: var_filePath,
+      fileName: var_fileName,
       lineNumber: var_lineNumber,
-      lineText: var_lineText,
+      lineContent: var_lineContent,
+      startCol: var_startCol,
+      endCol: var_endCol,
     );
   }
 
@@ -954,6 +988,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_bool(bool self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self ? 1 : 0);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_search_options(
+    SearchOptions self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_search_options(self, serializer);
   }
 
   @protected
@@ -1018,23 +1061,51 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_list_search_result(
-    List<SearchResult> self,
+  void sse_encode_list_search_result_match(
+    List<SearchResultMatch> self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
-      sse_encode_search_result(item, serializer);
+      sse_encode_search_result_match(item, serializer);
     }
   }
 
   @protected
-  void sse_encode_search_result(SearchResult self, SseSerializer serializer) {
+  void sse_encode_opt_String(String? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_String(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_search_options(SearchOptions self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.query, serializer);
+    sse_encode_String(self.rootDir, serializer);
+    sse_encode_bool(self.isRegex, serializer);
+    sse_encode_bool(self.matchCase, serializer);
+    sse_encode_bool(self.matchWholeWord, serializer);
+    sse_encode_opt_String(self.fileIncludeFilter, serializer);
+    sse_encode_opt_String(self.fileExcludeFilter, serializer);
+  }
+
+  @protected
+  void sse_encode_search_result_match(
+    SearchResultMatch self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.filePath, serializer);
+    sse_encode_String(self.fileName, serializer);
     sse_encode_usize(self.lineNumber, serializer);
-    sse_encode_String(self.lineText, serializer);
+    sse_encode_String(self.lineContent, serializer);
+    sse_encode_usize(self.startCol, serializer);
+    sse_encode_usize(self.endCol, serializer);
   }
 
   @protected

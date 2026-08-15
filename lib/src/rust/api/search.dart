@@ -6,47 +6,90 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`
 
-Future<List<SearchResult>> searchInWorkspace({
-  required String rootPath,
-  required String query,
-}) => RustLib.instance.api.crateApiSearchSearchInWorkspace(
-  rootPath: rootPath,
-  query: query,
-);
+Future<List<SearchResultMatch>> searchInWorkspace({
+  required SearchOptions options,
+}) => RustLib.instance.api.crateApiSearchSearchInWorkspace(options: options);
 
-Future<BigInt> replaceInWorkspace({
-  required String rootPath,
-  required String query,
-  required String replacement,
-}) => RustLib.instance.api.crateApiSearchReplaceInWorkspace(
-  rootPath: rootPath,
-  query: query,
-  replacement: replacement,
-);
+class SearchOptions {
+  final String query;
+  final String rootDir;
+  final bool isRegex;
+  final bool matchCase;
+  final bool matchWholeWord;
+  final String? fileIncludeFilter;
+  final String? fileExcludeFilter;
 
-class SearchResult {
-  final String filePath;
-  final BigInt lineNumber;
-  final String lineText;
-
-  const SearchResult({
-    required this.filePath,
-    required this.lineNumber,
-    required this.lineText,
+  const SearchOptions({
+    required this.query,
+    required this.rootDir,
+    required this.isRegex,
+    required this.matchCase,
+    required this.matchWholeWord,
+    this.fileIncludeFilter,
+    this.fileExcludeFilter,
   });
 
   @override
   int get hashCode =>
-      filePath.hashCode ^ lineNumber.hashCode ^ lineText.hashCode;
+      query.hashCode ^
+      rootDir.hashCode ^
+      isRegex.hashCode ^
+      matchCase.hashCode ^
+      matchWholeWord.hashCode ^
+      fileIncludeFilter.hashCode ^
+      fileExcludeFilter.hashCode;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is SearchResult &&
+      other is SearchOptions &&
+          runtimeType == other.runtimeType &&
+          query == other.query &&
+          rootDir == other.rootDir &&
+          isRegex == other.isRegex &&
+          matchCase == other.matchCase &&
+          matchWholeWord == other.matchWholeWord &&
+          fileIncludeFilter == other.fileIncludeFilter &&
+          fileExcludeFilter == other.fileExcludeFilter;
+}
+
+class SearchResultMatch {
+  final String filePath;
+  final String fileName;
+  final BigInt lineNumber;
+  final String lineContent;
+  final BigInt startCol;
+  final BigInt endCol;
+
+  const SearchResultMatch({
+    required this.filePath,
+    required this.fileName,
+    required this.lineNumber,
+    required this.lineContent,
+    required this.startCol,
+    required this.endCol,
+  });
+
+  @override
+  int get hashCode =>
+      filePath.hashCode ^
+      fileName.hashCode ^
+      lineNumber.hashCode ^
+      lineContent.hashCode ^
+      startCol.hashCode ^
+      endCol.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SearchResultMatch &&
           runtimeType == other.runtimeType &&
           filePath == other.filePath &&
+          fileName == other.fileName &&
           lineNumber == other.lineNumber &&
-          lineText == other.lineText;
+          lineContent == other.lineContent &&
+          startCol == other.startCol &&
+          endCol == other.endCol;
 }

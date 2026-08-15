@@ -30,6 +30,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  SearchOptions dco_decode_box_autoadd_search_options(dynamic raw);
+
+  @protected
   FileEntry dco_decode_file_entry(dynamic raw);
 
   @protected
@@ -48,10 +51,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
-  List<SearchResult> dco_decode_list_search_result(dynamic raw);
+  List<SearchResultMatch> dco_decode_list_search_result_match(dynamic raw);
 
   @protected
-  SearchResult dco_decode_search_result(dynamic raw);
+  String? dco_decode_opt_String(dynamic raw);
+
+  @protected
+  SearchOptions dco_decode_search_options(dynamic raw);
+
+  @protected
+  SearchResultMatch dco_decode_search_result_match(dynamic raw);
 
   @protected
   int dco_decode_u_8(dynamic raw);
@@ -67,6 +76,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  SearchOptions sse_decode_box_autoadd_search_options(
+    SseDeserializer deserializer,
+  );
 
   @protected
   FileEntry sse_decode_file_entry(SseDeserializer deserializer);
@@ -89,12 +103,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
-  List<SearchResult> sse_decode_list_search_result(
+  List<SearchResultMatch> sse_decode_list_search_result_match(
     SseDeserializer deserializer,
   );
 
   @protected
-  SearchResult sse_decode_search_result(SseDeserializer deserializer);
+  String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  SearchOptions sse_decode_search_options(SseDeserializer deserializer);
+
+  @protected
+  SearchResultMatch sse_decode_search_result_match(
+    SseDeserializer deserializer,
+  );
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
@@ -113,6 +135,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_search_options(
+    SearchOptions self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_file_entry(FileEntry self, SseSerializer serializer);
@@ -142,13 +170,22 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  void sse_encode_list_search_result(
-    List<SearchResult> self,
+  void sse_encode_list_search_result_match(
+    List<SearchResultMatch> self,
     SseSerializer serializer,
   );
 
   @protected
-  void sse_encode_search_result(SearchResult self, SseSerializer serializer);
+  void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_search_options(SearchOptions self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_search_result_match(
+    SearchResultMatch self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
