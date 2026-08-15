@@ -20,6 +20,7 @@ import 'package:ncode/src/features/editor/presentation/widgets/embedded_terminal
 import 'package:ncode/src/features/editor/presentation/widgets/status_bar.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/tab_bar_header.dart';
 import 'package:ncode/src/features/editor/presentation/widgets/nexora_floating_card.dart';
+import 'package:ncode/src/features/editor/presentation/widgets/drag_drop_zone.dart';
 
 class NcodeEditorScreen extends ConsumerStatefulWidget {
   const NcodeEditorScreen({super.key});
@@ -30,17 +31,47 @@ class NcodeEditorScreen extends ConsumerStatefulWidget {
 
 class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
   FastCodeController? _codeController;
+  FastCodeController? _secondaryCodeController;
+
   int _selectedActivityIndex = 0;
   int _currentLine = 1;
   int _currentColumn = 1;
   bool _isTerminalOpen = false;
+  bool _isSplitView = false;
+  int? _secondaryTabIndex;
   List<CodeDiagnostic> _diagnostics = [];
+
+  @override
+  void dispose() {
+    _codeController?.dispose();
+    _secondaryCodeController?.dispose();
+    super.dispose();
+  }
 
   void _updateController(String text, String filePath) {
     _codeController?.dispose();
     _codeController = FastCodeController(text: text);
     _codeController!.addListener(() => _onCodeChanged(filePath));
     _runAnalysis(text, filePath);
+    setState(() {});
+  }
+
+  void _updateSecondaryController(String text, String filePath) {
+    _secondaryCodeController?.dispose();
+    _secondaryCodeController = FastCodeController(text: text);
+    _secondaryCodeController!.addListener(() {
+      final tabs = ref.read(openTabsProvider);
+      if (_secondaryTabIndex != null && _secondaryTabIndex! < tabs.length) {
+        final tab = tabs[_secondaryTabIndex!];
+        if (tab.content != _secondaryCodeController!.text) {
+          tab.content = _secondaryCodeController!.text;
+          if (!tab.isModified) {
+            tab.isModified = true;
+            ref.read(openTabsProvider.notifier).state = [...tabs];
+          }
+        }
+      }
+    });
     setState(() {});
   }
 
@@ -172,12 +203,80 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
       _codeController?.dispose();
       _codeController = null;
       _diagnostics = [];
+      _isSplitView = false;
+      _secondaryTabIndex = null;
+      _secondaryCodeController?.dispose();
+      _secondaryCodeController = null;
       setState(() {});
     } else if (activeIndex != null) {
       final newIndex = index >= tabs.length ? tabs.length - 1 : index;
       ref.read(activeTabIndexProvider.notifier).state = newIndex;
       _updateController(tabs[newIndex].content, tabs[newIndex].path);
+
+      if (_isSplitView) {
+        if (_secondaryTabIndex != null && _secondaryTabIndex! >= tabs.length) {
+          _secondaryTabIndex = 0;
+          _updateSecondaryController(
+            tabs[_secondaryTabIndex!].content,
+            tabs[_secondaryTabIndex!].path,
+          );
+        }
+      }
     }
+  }
+
+  Widget _buildEditorCanvas({
+    required FastCodeController? controller,
+    required dynamic palette,
+    required VoidCallback onInteraction,
+  }) {
+    if (controller == null) {
+      return Center(
+        child: Text(
+          'NCODE',
+          style: TextStyle(
+            fontFamily: 'Gliker',
+            color: palette.textMuted,
+            fontSize: 28,
+            letterSpacing: 2.0,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      color: palette.background,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: KeyboardListener(
+        focusNode: FocusNode(),
+        onKeyEvent: (KeyEvent event) {
+          if (event is KeyDownEvent && event.character != null) {
+            controller.handleAutoClosePairs(event.character!);
+            onInteraction();
+          }
+        },
+        child: TextField(
+          controller: controller,
+          maxLines: null,
+          expands: true,
+          keyboardType: TextInputType.multiline,
+          autofocus: true,
+          autocorrect: false,
+          enableSuggestions: false,
+          style: TextStyle(
+            fontFamily: 'Cascadia Code',
+            fontSize: 13,
+            height: 1.4,
+            color: palette.textPrimary,
+          ),
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -279,87 +378,139 @@ class _NcodeEditorScreenState extends ConsumerState<NcodeEditorScreen> {
                     else if (_selectedActivityIndex == 6)
                       const SettingsPanel(),
 
-                    // 3. Editor Central Flotante
+                    // 3. Editor Central Flotante con Drag & Drop y Split View
                     Expanded(
-                      child: NexoraFloatingCard(
-                        margin: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                        child: Column(
-                          children: [
-                            TabBarHeader(
-                              onSave: _saveCurrentFile,
-                              onCloseTab: _closeTab,
-                              onTabSelected: (index) {
-                                ref
-                                        .read(activeTabIndexProvider.notifier)
-                                        .state =
-                                    index;
-                                final currentTabs = ref.read(openTabsProvider);
-                                _updateController(
-                                  currentTabs[index].content,
-                                  currentTabs[index].path,
-                                );
-                              },
-                            ),
-                            Divider(height: 1, color: palette.border),
-                            Expanded(
-                              child: Container(
-                                color: palette.background,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                child: _codeController == null
-                                    ? Center(
-                                        child: Text(
-                                          'NCODE',
-                                          style: TextStyle(
-                                            fontFamily: 'Gliker',
-                                            color: palette.textMuted,
-                                            fontSize: 28,
-                                            letterSpacing: 2.0,
-                                          ),
-                                        ),
-                                      )
-                                    : KeyboardListener(
-                                        focusNode: FocusNode(),
-                                        onKeyEvent: (KeyEvent event) {
-                                          if (event is KeyDownEvent &&
-                                              event.character != null) {
-                                            _codeController!
-                                                .handleAutoClosePairs(
-                                                  event.character!,
-                                                );
+                      child: NexoraDropZone(
+                        onFilesDropped: (files) {
+                          for (final file in files) {
+                            _openFile(file.path, file.name);
+                          }
+                        },
+                        child: NexoraFloatingCard(
+                          margin: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TabBarHeader(
+                                      onSave: _saveCurrentFile,
+                                      onCloseTab: _closeTab,
+                                      onTabSelected: (index) {
+                                        ref
+                                                .read(
+                                                  activeTabIndexProvider
+                                                      .notifier,
+                                                )
+                                                .state =
+                                            index;
+                                        final currentTabs = ref.read(
+                                          openTabsProvider,
+                                        );
+                                        _updateController(
+                                          currentTabs[index].content,
+                                          currentTabs[index].path,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: _isSplitView
+                                        ? 'Cerrar Split View'
+                                        : 'Dividir Editor (Split View)',
+                                    icon: Icon(
+                                      _isSplitView
+                                          ? Icons.vertical_split
+                                          : Icons.splitscreen_outlined,
+                                      size: 18,
+                                      color: _isSplitView
+                                          ? palette.accent
+                                          : palette.textMuted,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isSplitView = !_isSplitView;
+                                        if (_isSplitView && tabs.length > 1) {
+                                          _secondaryTabIndex =
+                                              (activeIndex == 0) ? 1 : 0;
+                                          _updateSecondaryController(
+                                            tabs[_secondaryTabIndex!].content,
+                                            tabs[_secondaryTabIndex!].path,
+                                          );
+                                        }
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                              ),
+                              Divider(height: 1, color: palette.border),
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    // Panel Principal
+                                    Expanded(
+                                      child: _buildEditorCanvas(
+                                        controller: _codeController,
+                                        palette: palette,
+                                        onInteraction: () {
+                                          if (activeTab != null) {
+                                            _onCodeChanged(activeTab.path);
                                           }
                                         },
-                                        child: TextField(
-                                          controller: _codeController!,
-                                          maxLines: null,
-                                          expands: true,
-                                          keyboardType: TextInputType.multiline,
-                                          autofocus: true,
-                                          autocorrect: false,
-                                          enableSuggestions: false,
-                                          style: TextStyle(
-                                            fontFamily: 'Cascadia Code',
-                                            fontSize: 13,
-                                            height: 1.4,
-                                            color: palette.textPrimary,
-                                          ),
-                                          decoration: const InputDecoration(
-                                            border: InputBorder.none,
-                                            focusedBorder: InputBorder.none,
-                                            contentPadding: EdgeInsets.zero,
-                                          ),
+                                      ),
+                                    ),
+
+                                    // Panel Secundario (Split View)
+                                    if (_isSplitView &&
+                                        _secondaryTabIndex != null &&
+                                        _secondaryTabIndex! < tabs.length) ...[
+                                      VerticalDivider(
+                                        width: 1,
+                                        color: palette.border,
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 6,
+                                                  ),
+                                              color: palette.surfaceElevated,
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(
+                                                tabs[_secondaryTabIndex!].name,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: palette.textMuted,
+                                                  fontFamily: 'Inter',
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: _buildEditorCanvas(
+                                                controller:
+                                                    _secondaryCodeController,
+                                                palette: palette,
+                                                onInteraction: () {},
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
+                                    ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            if (_isTerminalOpen)
-                              EmbeddedTerminal(
-                                onClose: () =>
-                                    setState(() => _isTerminalOpen = false),
-                              ),
-                          ],
+                              if (_isTerminalOpen)
+                                EmbeddedTerminal(
+                                  onClose: () =>
+                                      setState(() => _isTerminalOpen = false),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
